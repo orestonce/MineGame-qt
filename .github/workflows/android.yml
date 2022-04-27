@@ -3,7 +3,7 @@ on:
   push:
     paths:
       - '*.pro'
-      - 'src/**'
+      - '*'
       - '.github/workflows/android.yml'
   pull_request:
     paths:
@@ -45,7 +45,8 @@ jobs:
           export ANDROID_SDK_ROOT=$ANDROID_HOME
           export ANDROID_NDK_ROOT=$ANDROID_HOME/ndk-bundle
           qmake
-          make aab
+          make -j8
+          cat Makefile
           find
       - name: Upload APK
         uses: actions/upload-artifact@v1
