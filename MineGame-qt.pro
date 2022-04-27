@@ -28,3 +28,4 @@ OTHER_FILES += \
     mine.rc
 
 RC_FILE = mine.rc
+
