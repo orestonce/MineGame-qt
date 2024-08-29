@@ -2,7 +2,6 @@
 #include "ui_MineGameWindow.h"
 #include <QTableWidgetItem>
 #include <QPaintEvent>
-#include <string>
 
 using restonce::MineGame;
 
@@ -114,13 +113,12 @@ void MineGameWindow::paintEvent (QPaintEvent *)
             case MineGame::MineView::open:
                 if ( u.isMine ) {
                     i->setText (" * ");
+                } else if (u.aroundMineCount > 0) {
+                    i->setText(QString().sprintf(" %d ", u.aroundMineCount));
                 } else {
-                    i->setText ( (std::string(" ")+ std::to_string (u.aroundMineCount))
-                                                  .c_str() );
+                    i->setText("   ");
                 }
                 break;
-                //            default:
-                //                break;
             }
             ui->tableWidget->setItem (r, c, i );
         }
