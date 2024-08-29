@@ -107,14 +107,14 @@ void MineGameWindow::paintEvent (QPaintEvent *)
                 i->setBackground (Qt::gray);
                 break;
             case MineGame::MineView::bome:
-                i->setIcon(QIcon("://image/boom.jpg"));
+                i->setIcon(QIcon("://image/boom.png"));
                 break;
             case MineGame::MineView::marked:
                 i->setIcon(QIcon("://image/flag.png"));
                 break;
             case MineGame::MineView::open:
                 if ( u.isMine ) {
-                    i->setIcon(QIcon("://image/normal.jpg"));
+                    i->setIcon(QIcon("://image/normal.png"));
                 } else if (u.aroundMineCount > 0) {
                     i->setText(QString::number(u.aroundMineCount));
                 }
