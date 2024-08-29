@@ -8,7 +8,7 @@ on:
     types: [ created ]
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  build-upload_windows-x64:
+  build_upload-windows-x64:
     runs-on: windows-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -25,6 +25,27 @@ jobs:
       - name: upload release
         uses: Guerra24/upload-to-release@v1
         with:
-          name: MineGame-qt_${{ github.ref_name }}.exe
+          name: MineGame-x64-${{ github.ref_name }}.exe
+          path: release\MineGame-qt.exe
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          
+  build_upload-windows-x86:
+    runs-on: windows-latest
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      - name: install qt static
+        uses: orestonce/install-qt@main
+        with:
+          version: Qt4.8.7-Windows-x86-MinGW4.9.4-20200104
+      - name: build
+        run: |
+          qmake && mingw32-make release
+          dir release\MineGame-qt.exe
+      - name: upload release
+        uses: Guerra24/upload-to-release@v1
+        with:
+          name: MineGame-x86-${{ github.ref_name }}.exe
           path: release\MineGame-qt.exe
           repo-token: ${{ secrets.GITHUB_TOKEN }}
