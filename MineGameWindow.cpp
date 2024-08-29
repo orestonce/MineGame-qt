@@ -2,6 +2,7 @@
 #include "ui_MineGameWindow.h"
 #include <QTableWidgetItem>
 #include <QPaintEvent>
+#include <string>
 
 using restonce::MineGame;
 
