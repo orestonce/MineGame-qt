@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>image/boom.jpg</file>
+        <file>image/flag.png</file>
+        <file>image/normal.jpg</file>
+    </qresource>
+</RCC>

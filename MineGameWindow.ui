@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>488</width>
-    <height>380</height>
+    <width>551</width>
+    <height>423</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,9 +19,12 @@
      <rect>
       <x>10</x>
       <y>30</y>
-      <width>311</width>
-      <height>311</height>
+      <width>341</width>
+      <height>331</height>
      </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::NoFocus</enum>
     </property>
     <property name="editTriggers">
      <set>QAbstractItemView::NoEditTriggers</set>
@@ -101,8 +104,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>488</width>
-     <height>26</height>
+     <width>551</width>
+     <height>23</height>
     </rect>
    </property>
   </widget>

@@ -31,3 +31,6 @@ OTHER_FILES += \
 
 RC_FILE = mine.rc
 
+RESOURCES += \
+    image.qrc
+

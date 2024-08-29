@@ -2,6 +2,8 @@
 #include "ui_MineGameWindow.h"
 #include <QTableWidgetItem>
 #include <QPaintEvent>
+#include <iostream>
+#include <QDebug>
 
 using restonce::MineGame;
 
@@ -25,7 +27,8 @@ MineGameWindow::MineGameWindow(QWidget *parent) :
             ui->tableWidget->setItem (r, c, new QTableWidgetItem);
         }
     }
-    ui->tableWidget->resize (330, 340);
+    ui->tableWidget->resize (302, 302);
+    ui->tableWidget->setIconSize(QSize(31, 31));
 }
 
 MineGameWindow::~MineGameWindow()
@@ -37,14 +40,11 @@ void MineGameWindow::setApp (QApplication *a)
 {
     this->a = a;
 }
-#include <iostream>
 
 void MineGameWindow::slot_itemPressed (QTableWidgetItem *i)
 {
     int row = i->row ();
     int col = i->column ();
-
-//    std::cout << "press" << row << " " << col << std::endl;
 
     switch (a->mouseButtons () )
     {
@@ -100,23 +100,23 @@ void MineGameWindow::paintEvent (QPaintEvent *)
         for( int r=0; r<ui->tableWidget->rowCount (); ++r) {
             auto u = game->getMineUnit (c, r);
             auto i = new QTableWidgetItem();
+            i->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+
             switch( u.v ) {
             case MineGame::MineView::close:
                 i->setBackground (Qt::gray);
                 break;
             case MineGame::MineView::bome:
-                i->setText (" B");
+                i->setIcon(QIcon("://image/boom.jpg"));
                 break;
             case MineGame::MineView::marked:
-                i->setBackground (Qt::blue);
+                i->setIcon(QIcon("://image/flag.png"));
                 break;
             case MineGame::MineView::open:
                 if ( u.isMine ) {
-                    i->setText (" * ");
+                    i->setIcon(QIcon("://image/normal.jpg"));
                 } else if (u.aroundMineCount > 0) {
-                    i->setText(QString().sprintf(" %d ", u.aroundMineCount));
-                } else {
-                    i->setText("   ");
+                    i->setText(QString::number(u.aroundMineCount));
                 }
                 break;
             }
