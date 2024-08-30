@@ -4,6 +4,7 @@
 #include <QPaintEvent>
 #include <iostream>
 #include <QDebug>
+#include <QPainter>
 
 using restonce::MineGame;
 
@@ -12,23 +13,10 @@ MineGameWindow::MineGameWindow(QWidget *parent) :
     ui(new Ui::MineGameWindow)
 {
     ui->setupUi(this);
-    this->setFixedSize (this->size ());
-    ui->tableWidget->verticalHeader ()->setVisible (false);
-    ui->tableWidget->horizontalHeader ()->setVisible (false);
-    for ( int col =0; col < ui->tableWidget->columnCount (); ++col) {
-        ui->tableWidget->setColumnWidth (col, ui->tableWidget->rowHeight (0));
-    }
-    connect (ui->tableWidget,SIGNAL(itemPressed(QTableWidgetItem*)),
-             this, SLOT(slot_itemPressed(QTableWidgetItem*)) );
     game = new restonce::MineGame;
+    game->setStatusChangeCallback(std::bind(&MineGameWindow::stateChanged, this));
     game->init (10, 10);
-    for( int c =0; c < ui->tableWidget->columnCount (); ++c) {
-        for( int r=0; r<ui->tableWidget->rowCount (); ++r) {
-            ui->tableWidget->setItem (r, c, new QTableWidgetItem);
-        }
-    }
-    ui->tableWidget->resize (302, 302);
-    ui->tableWidget->setIconSize(QSize(31, 31));
+    ui->widget_down->installEventFilter(this);
 }
 
 MineGameWindow::~MineGameWindow()
@@ -36,91 +24,175 @@ MineGameWindow::~MineGameWindow()
     delete ui;
 }
 
-void MineGameWindow::setApp (QApplication *a)
-{
-    this->a = a;
-}
-
-void MineGameWindow::slot_itemPressed (QTableWidgetItem *i)
-{
-    int row = i->row ();
-    int col = i->column ();
-
-    switch (a->mouseButtons () )
-    {
-    case Qt::LeftButton:
-        game->leftClicked (col, row);
-        break;
-    case Qt::RightButton:
-        game->rightClicked (col, row);
-        break;
-    default:
-        break;
-    }
-
-    repaint ();
-}
-
 void MineGameWindow::on_pushButton_clicked()
 {
-    if ( ui->pushButton->text () == trUtf8 ("开始") ||
-         ui->pushButton->text () == trUtf8 ("重新开始") ) {
-        game->init (10, 13);
-        game->gameStart ();
-    } else if ( ui->pushButton->text () == trUtf8 ("停止游戏") ){
-        game->gameStop ();
-    }
-    repaint ();
+    game->init (10, 13);
+    game->gameStart();
+    repaint();
 }
 
-void MineGameWindow::paintEvent (QPaintEvent *)
+bool MineGameWindow::eventFilter(QObject *watched, QEvent *event)
 {
-    ui->label_win->clear ();
-    switch (game->getGameStatus () )
+    if(watched == ui->widget_down && event->type() == QEvent::Paint) {
+        QPainter painter(ui->widget_down);
+        QSize sz = ui->widget_down->size();
+        int x0 = 5;
+        int y0 = 5;
+        int x1 = sz.width() -5;
+        int y1 = sz.height()-5;
+        int rowCount = game->getRowCount();
+
+        int stepY = 0;
+        int stepX = 0;
+
+        if(rowCount > 0 && y1 > y0 + rowCount && x1 > x0 + rowCount)
+        {
+            stepY = (y1 - y0) / rowCount;
+            stepX = (x1 - x0) / rowCount;
+
+            int spaceY = ui->widget_down->height() - stepY * rowCount;
+            int spaceX = ui->widget_down->width() - stepX * rowCount;
+
+            x0 = spaceX/2;
+            y0 = spaceY/2;
+
+            y1 = y0 + rowCount * stepY;
+            x1 = x0 + rowCount * stepX;
+        }
+
+        if(stepY > 0)
+        {
+            for(int i=0; i <= y1 - y0; i += stepY)
+            {
+                int y = y0 + i;
+                painter.drawLine(x0, y, x1, y);
+            }
+        }
+
+        if(stepX > 0)
+        {
+            for(int i=0; i <= x1 - x0; i += stepX)
+            {
+                int x = x0 + i;
+                painter.drawLine(x, y0, x, y1);
+            }
+        }
+
+        m_x0 = x0;
+        m_y0 = y0;
+        m_stepX = stepX;
+        m_stepY = stepY;
+
+
+        if(stepX > 0 && stepY > 0)
+        {
+            QImage boom = QImage(":/image/mine/boom.png").scaled(stepX, stepY);
+            QImage flag = QImage(":/image/mine/flag.png").scaled(stepX, stepY);
+            QImage normal = QImage(":/image/mine/normal.png").scaled(stepX, stepY);
+
+            for(int lx = 0; lx < rowCount; lx++)
+            {
+                for(int ly = 0; ly < rowCount; ly++)
+                {
+                    QRect r = getMineRect(lx, ly);
+                    if(r.isValid() == false)
+                        continue;
+                    auto u = game->getMineUnit (lx, ly);
+                    switch( u.v ) {
+                        case MineGame::MineView::close:
+                            painter.fillRect(r, Qt::gray);
+                            break;
+                        case MineGame::MineView::bome:
+                            painter.drawImage(r, boom);
+                            break;
+                        case MineGame::MineView::marked:
+                            painter.drawImage(r, flag);
+                            break;
+                        case MineGame::MineView::open:
+                            if ( u.isMine ) {
+                                painter.drawImage(r, normal);
+                            } else if (u.aroundMineCount > 0) {
+                                painter.drawText(QRectF(r), QString::number(u.aroundMineCount),
+                                                 QTextOption(Qt::AlignCenter));
+                            }
+                            break;
+                    }
+
+                }
+            }
+        }
+    } else if(watched == ui->widget_down && event->type() == QEvent::MouseButtonPress) {
+        QMouseEvent* me = dynamic_cast<QMouseEvent*>(event);
+        int rowCount = game->getRowCount();
+
+        if(me != nullptr && m_stepX > 0 && m_stepY > 0 && rowCount > 0)
+        {
+            int logicX = (me->pos().x() - m_x0) / m_stepX;
+            int logicY = (me->pos().y() - m_y0) / m_stepY;
+
+            switch(me->button())
+            {
+            case Qt::LeftButton:
+                game->leftClicked (logicX, logicY);
+                ui->widget_down->repaint();
+                break;
+            case Qt::RightButton:
+                game->rightClicked (logicX, logicY);
+                ui->widget_down->repaint();
+                break;
+            default:
+                break;
+            }
+        }
+    }
+    return true;
+}
+
+QRect MineGameWindow::getMineRect(int lx, int ly)
+{
+    QRect r;
+    if(lx >= 0 && ly >= 0 && m_stepX > 0 && m_stepY > 0)
     {
-    case MineGame::GameStatus::undo:
-        ui->label->setText (trUtf8 ("未开始"));
-        ui->label->setText (trUtf8 ("开始游戏"));
-        break;
+        r = QRect(QPoint(m_x0 + m_stepX*lx + 2, m_y0 + m_stepY*ly + 2),
+                  QSize(m_stepX-2, m_stepY-2));
+    }
+    return r;
+}
+
+void MineGameWindow::stateChanged()
+{
+    repaint();
+}
+
+void MineGameWindow::on_actionRestart_triggered()
+{
+    game->init (10, 13);
+    game->gameStart();
+    repaint();
+}
+
+void MineGameWindow::paintEvent(QPaintEvent *event)
+{
+    QString iconPath;
+
+    switch(game->getGameStatus())
+    {
     case MineGame::GameStatus::runing:
-        ui->label->setText (trUtf8 ("正在游戏"));
-        ui->pushButton->setText (trUtf8 ("停止游戏"));
+        iconPath = ":/image/face/runing.png";
         break;
-    default:
-        ui->label->setText (trUtf8 ("游戏结束"));
-        ui->pushButton->setText (trUtf8 ("重新开始"));
-        if ( game->getWinStatus ()== MineGame::WinStatus::lose ) {
-            ui->label_win->setText (trUtf8 ("你输了"));
+    case MineGame::GameStatus::stop:
+        if(game->getWinStatus() == MineGame::WinStatus::win) {
+            iconPath = ":/image/face/win.png";
+        } else if(game->getWinStatus() == MineGame::WinStatus::lose) {
+            iconPath = ":/image/face/lose.png";
         } else {
-            ui->label_win->setText (trUtf8 ("你赢了"));
+            iconPath = ":/image/face/none.png";
         }
         break;
     }
-    for( int c =0; c < ui->tableWidget->columnCount (); ++c) {
-        for( int r=0; r<ui->tableWidget->rowCount (); ++r) {
-            auto u = game->getMineUnit (c, r);
-            auto i = new QTableWidgetItem();
-            i->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
 
-            switch( u.v ) {
-            case MineGame::MineView::close:
-                i->setBackground (Qt::gray);
-                break;
-            case MineGame::MineView::bome:
-                i->setIcon(QIcon("://image/boom.png"));
-                break;
-            case MineGame::MineView::marked:
-                i->setIcon(QIcon("://image/flag.png"));
-                break;
-            case MineGame::MineView::open:
-                if ( u.isMine ) {
-                    i->setIcon(QIcon("://image/normal.png"));
-                } else if (u.aroundMineCount > 0) {
-                    i->setText(QString::number(u.aroundMineCount));
-                }
-                break;
-            }
-            ui->tableWidget->setItem (r, c, i );
-        }
+    if(iconPath.isEmpty() == false)
+    {
+        ui->pushButton->setStyleSheet(QString("QPushButton{border-image: url(%1)}").arg(iconPath));
     }
 }

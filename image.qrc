@@ -1,7 +1,12 @@
 <RCC>
     <qresource prefix="/">
-        <file>image/flag.png</file>
-        <file>image/boom.png</file>
-        <file>image/normal.png</file>
+        <file>image/mine/boom.png</file>
+        <file>image/mine/flag.png</file>
+        <file>image/mine/normal.png</file>
+        <file>image/face/lose.png</file>
+        <file>image/face/none.png</file>
+        <file>image/face/runing.png</file>
+        <file>image/face/stop.png</file>
+        <file>image/face/win.png</file>
     </qresource>
 </RCC>

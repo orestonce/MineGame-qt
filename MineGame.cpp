@@ -12,7 +12,8 @@ class MineGameImpl
 public :
     MineGameImpl()
     {
-        gameStatus = MineGame::GameStatus::undo;
+        gameStatus = MineGame::GameStatus::stop;
+        winStatus = MineGame::WinStatus::none;
     }
 
     struct Position {
@@ -21,17 +22,14 @@ public :
 
     void init (int rowCount, int mineCount)
     {
-//        std::clog << rowCount << " " << mineCount << std::endl;
-
         int positions = rowCount * rowCount;
         if ( rowCount <MineGame:: MIN_ROW ||
              rowCount > MineGame:: MAX_ROW ||
-             mineCount > positions/6 ||
-             mineCount < positions/10 ) {
+             mineCount >= positions || mineCount < 1 ) {
             throw std::runtime_error("init failed !");
         }
         this->rowCount = rowCount;
-        this->gameStatus = MineGame::GameStatus::undo;
+        this->gameStatus = MineGame::GameStatus::stop;
         // 清空地图
         for ( int i=0; i<MineGame::MAX_ROW; ++i) {
             for( int j=0; j<MineGame::MAX_ROW; ++j) {
@@ -40,7 +38,7 @@ public :
                 maps[i][j].aroundMineCount = 0;
             }
         }
-        gameStatus = MineGame::GameStatus::undo;
+        gameStatus = MineGame::GameStatus::stop;
         // 随机产生地雷
         srand(time(NULL));
         for ( int i=0; i<mineCount ; ++i) {
@@ -92,7 +90,6 @@ public :
              || gameStatus != MineGame::GameStatus::runing ) {
             return ;
         }
-//        std::clog << "clicked " << std::endl;
         if ( maps[l][r].v == MineGame::MineView::close ) {
             if ( maps[l][r].isMine ) {// 左击中地雷
                 maps[l][r].v = MineGame::MineView::bome; // 此处位置状态为爆炸
@@ -131,23 +128,15 @@ public :
         {
         case MineGame::MineView::marked:
             maps[l][r].v = MineGame::MineView::close;
+            m_fn();
             break;
         case MineGame::MineView::close:
             maps[l][r].v = MineGame::MineView::marked;
+            m_fn();
             break;
         default:
             break;
         }
-    }
-
-    void gameStart()
-    {
-        gameStatus = MineGame::GameStatus::runing;
-    }
-    void gameStop()
-    {
-        gameStatus = MineGame::GameStatus::stop;
-        winStatus = MineGame::WinStatus::lose;
     }
 
 private:
@@ -219,11 +208,12 @@ private:
             std::cout << std::endl;
         }
     }
-private:
+public:
     MineGame::MineUnit maps[MineGame::MAX_ROW][MineGame::MAX_ROW];
     int rowCount;
     MineGame::GameStatus gameStatus;
-    MineGame::WinStatus   winStatus;
+    MineGame::WinStatus   winStatus = MineGame::WinStatus::none;
+    std::function<void()> m_fn;
 };
 
 MineGame::MineGame()
@@ -256,26 +246,35 @@ MineGame::WinStatus MineGame::getWinStatus () const
     return mineGameImpl->getWinStatus ();
 }
 
+int MineGame::getRowCount() const
+{
+    return mineGameImpl->rowCount;
+}
+
 void MineGame::gameStart ()
 {
-    mineGameImpl->gameStart ();
+    mineGameImpl->gameStatus = MineGame::GameStatus::runing;
 }
 
 void MineGame::gameStop ()
 {
-    mineGameImpl->gameStop();
+    mineGameImpl->gameStatus = MineGame::GameStatus::stop;
+    mineGameImpl->winStatus = MineGame::WinStatus::none;
 }
 
 void MineGame::leftClicked (int line, int row)
 {
     mineGameImpl->leftClicked (line, row);
-//    std::cout << __func__ << std::endl;
 }
 
 void MineGame::rightClicked (int line, int row)
 {
     mineGameImpl->rightClicked (line, row);
-//    std::cout << __func__ << std::endl;
+}
+
+void MineGame::setStatusChangeCallback(std::function<void ()> cb)
+{
+    mineGameImpl->m_fn = cb;
 }
 
 } // namespace restonce

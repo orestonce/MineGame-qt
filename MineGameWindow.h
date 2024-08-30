@@ -17,17 +17,23 @@ class MineGameWindow : public QMainWindow
 
 public:
     explicit MineGameWindow(QWidget *parent = 0);
-    void setApp(QApplication *a);
     ~MineGameWindow();
 private slots:
-    void slot_itemPressed(QTableWidgetItem* );
     void on_pushButton_clicked();
+    void on_actionRestart_triggered();
+
 protected:
-    void paintEvent (QPaintEvent *);
+    void paintEvent(QPaintEvent *event);
+    bool eventFilter(QObject *watched, QEvent *event);
+    QRect getMineRect(int lx, int ly);
+    void stateChanged();
 private:
     Ui::MineGameWindow *ui;
-    QApplication *a;
     restonce::MineGame *game;
+    int m_x0 = 0;
+    int m_y0 = 0;
+    int m_stepX = 0;
+    int m_stepY = 0;
 };
 
 #endif // MINEGAMEWINDOW_H

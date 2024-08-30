@@ -1,6 +1,8 @@
 #ifndef RESTONCE_MINEGAME_H
 #define RESTONCE_MINEGAME_H
 
+#include <functional>
+
 namespace restonce {
 
 class MineGameImpl;
@@ -10,14 +12,14 @@ class MineGame
 public:
     enum {
         MIN_ROW = 8,
-        MAX_ROW = 15
+        MAX_ROW = 32
     };
     enum class GameStatus {
-        undo, runing, stop
+        runing, stop
     };
 
     enum class WinStatus {
-        win, lose
+        none, win, lose
     };
     enum class MineView {
         close, open, marked, bome
@@ -34,10 +36,13 @@ public:
     MineUnit getMineUnit(int line, int row) const;
     GameStatus getGameStatus() const;
     WinStatus   getWinStatus() const;
+    int getRowCount() const;
     void gameStart();
     void gameStop();
     void leftClicked(int line, int row);
     void rightClicked(int line, int row);
+
+    void setStatusChangeCallback(std::function<void()> cb);
 private:
     MineGameImpl* mineGameImpl;
 };
